@@ -1,0 +1,237 @@
+<html>
+<style>
+.texttitle {
+ font-family: Arial; 
+ color: #41df55;
+// text-shadow: .5px .5px #cdff42;   
+}
+
+body{
+ background: black;
+}
+     
+div {
+    height: 800px;
+}
+#wrapper {
+    width: 1000px;
+    overflow-x: auto;
+    overflow-y: hidden;
+    background-color: #ccc;
+}
+#inner {
+    width: 1000px;
+}
+#left {
+    width:90px;
+    float: left;
+    background-color: grey;
+}
+#right {
+    width: 910px;
+    float: left;
+    background-color: black;
+}
+
+canvas { width: 800x; height: 600px; }
+
+.menutext {
+ //color: #41df55;
+ color: white;
+}
+
+</style> 
+<script>
+function displayColor(){
+var color1 = document.getElementById('color1').value;
+document.getElementById('colorHexCode').value = color1; 
+
+}
+</script>
+<h3 class="texttitle">Wireframe Animation Visualization Editor</h3> 
+<div id="wrapper">
+    <div id="inner">
+        <div id="left">
+<label class="menutext">Shape:</label>
+          <select class="menuButton" id="select1">
+   <option value="sphere">sphere</option>
+   <option value="cube">cube</option>
+   <option value="cylinder">cylinder</option>
+   <option value="octogon">octogon</option>
+   <option value="doughnut">doughnut</option>
+   <option value="pyrimid">pyrimid</option>
+   <option value="diamond">diamond</option>
+ </select>
+<hr></hr>
+<label class="menutext">Rotation:</label>
+ <select class="menuButton" id="direction1">
+   <option value="down">down</option>
+   <option value="up">up</option>
+   <option value="left">left</option>
+   <option value="right">right</option>
+   <option value="none">none</option>
+ </select>
+<hr></hr>
+ <input id="width" Placeholder="Width"></input>
+ <input id="height" Placeholder="height"></input>
+<input type="color" id="color1" value="#2ac044" onchange="displayColor()">
+<input id="colorHexCode"/ Placeholder="hexcolor">
+<button onclick="drawCanvas()">Generate</button>
+ 
+        </div>
+        <div id="right">
+
+        </div>
+    </div>
+</div>
+ <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/0.146.0/three.min.js"></script>
+    <script>
+
+var div, camera,scene, shapeObject, material, geometry, light, requestID;
+var direction;
+
+function clearScene( scene ) {
+    for (let i = scene.children.length - 1; i >= 0; i--) {
+      const object = scene.children[i];
+        object.geometry.dispose();
+        object.material.dispose();
+        scene.remove(object);
+    }
+}
+
+function stopAnimation(){
+cancelAnimationFrame( requestID );
+}
+
+//------------   DRAW CANVAS -------------------------
+function drawCanvas(){
+// check if the canvas exists and if does delete it
+ var checkCanvas = document.getElementById('canvas');
+ if(typeof(checkCanvas) != 'undefined' && checkCanvas != null){
+// stop the animae, remove the object, delete scene and canvas
+   stopAnimation();
+  // delete objects, clean up the memory
+   clearScene(scene);
+   scene = null;
+   delete canvas;
+  }
+
+// if the canvas doesnt exist then create it.
+const canvas = document.createElement('canvas');
+// get the div to put it in
+ div = document.getElementById('right');     
+ scene = new THREE.Scene();
+const renderer = new THREE.WebGLRenderer({ canvas, antialias: true, alpha: true });
+renderer.setSize(window.innerWidth, window.innerHeight);
+
+renderer.setClearColor(0x000000, 1);
+// Stick the canvas in our DIV display area
+ div.appendChild(renderer.domElement);
+ camera = new THREE.PerspectiveCamera( 75, window.innerWidth / window.innerHeight, 0.1, 600 );
+camera.position.z =60 
+
+// set the material to wireframe and apply the color
+// Were getting color from whats set in the Left Menu area
+// if the user has something versus color picker then use it
+ var customColor, colorValue;
+ customColor = document.getElementById('colorHexCode').value;
+ if( customColor.match("#")){
+    var colorValue = customColor;
+  }
+ else {  
+    colorValue = document.getElementById('color1').value; 
+  } 
+
+  material = new THREE.MeshStandardMaterial({
+        color: colorValue,
+     wireframe: true,
+    });
+// We are going to get the shape from the left menu
+// shape selection..
+  var shapeSelected = document.getElementById('select1').value;
+
+ switch(shapeSelected){
+  case "sphere":
+    geometry = new THREE.SphereGeometry( 20, 20, 20);
+    break; 
+  case "cube":
+    geometry = new THREE.BoxGeometry( 20, 20, 20);
+    break;
+  case "cylinder":
+    geometry = new THREE.CylinderGeometry( 5, 5, 20, 32 );
+    break; 
+  case "octogon":
+    geometry = new THREE.CylinderGeometry( 20, 20, 20);
+    break; 
+  case "doughnut":
+    geometry = new THREE.TorusGeometry( 10, 13, 16, 100);
+    break;
+  case "diamond":
+    geometry = new THREE.SphereGeometry(16, 5, -30); 
+    break;
+  case "pyrimid":
+      var pts = [
+	new THREE.Vector3(15, 15, 15),
+        new THREE.Vector3(0, 0, 0),
+        new THREE.Vector3(0, 0, 10),
+        new THREE.Vector3(10, 0, 10),
+        new THREE.Vector3(10, 0, 0)
+       ];
+
+     geometry= new THREE.BufferGeometry().setFromPoints(pts);
+     geometry.setIndex([
+	0, 1, 2,
+        0, 2, 3, 
+        0, 3, 4,
+        0, 4, 1,
+        1, 3, 2,
+        1, 4, 3
+        ]);
+       geometry.computeVertexNormals();
+    break;
+  default:
+    geometry = new THREE.SphereGeometry( 20, 20, 20);
+  }
+
+shapeObject = new THREE.Mesh( geometry, material );
+scene.add( shapeObject );
+
+const light = new THREE.HemisphereLight(0xd90368, 0x64a6bd, 2);
+scene.add(light);
+
+const frontLight = new THREE.DirectionalLight(0xffffff, 1);
+frontLight.position.set(1000, 300, 1000).normalize(); 
+scene.add(frontLight);
+const animate = function () {
+  requestID = requestAnimationFrame( animate );
+ direction = document.getElementById('direction1').value;
+ switch(direction){
+  case "up":
+    shapeObject.rotation.x -= 0.01
+    break; 
+  case "down":
+    shapeObject.rotation.x += 0.01
+    break; 
+  case "right":
+    shapeObject.rotation.z -= 0.01
+    break; 
+  case "left":
+    shapeObject.rotation.z += 0.01
+    break; 
+  case "none":
+    stopAnimmation(); 
+    break; 
+  default:
+  shapeObject.rotation.x += 0.01
+  }
+  renderer.render( scene, camera );
+};
+
+animate();
+}
+
+drawCanvas();
+    </script>
+  </body>
+</html>
+
